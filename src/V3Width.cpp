@@ -9382,11 +9382,12 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetDouble();
             // Self-determined operand (TODO check if numeric type)
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
-            if (nodep->lhsp()->isSigned()) {
-                nodep->replaceWith(
-                    new AstISToRD{nodep->fileline(), nodep->lhsp()->unlinkFrBack()});
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            }
+        }
+        // The operand may need final resolution, e.g. a cast under spliceCvtD
+        if (m_vup->final()) userIterateAndNext(nodep->lhsp(), WidthVP{SELF, FINAL}.p());
+        if (nodep->lhsp()->isSigned()) {
+            nodep->replaceWith(new AstISToRD{nodep->fileline(), nodep->lhsp()->unlinkFrBack()});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstISToRD* nodep) override {
@@ -9398,6 +9399,8 @@ class WidthVisitor final : public VNVisitor {
             // Self-determined operand (TODO check if numeric type)
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
         }
+        // The operand may need final resolution, e.g. a cast under spliceCvtD
+        if (m_vup->final()) userIterateAndNext(nodep->lhsp(), WidthVP{SELF, FINAL}.p());
     }
     void visit_Os32_Lr(AstNodeUniop* nodep) {
         // CALLER: RToI

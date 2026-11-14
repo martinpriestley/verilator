@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2011 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 interface intf;
   typedef logic [7:0] octet;
   typedef octet [1:0] word;
@@ -79,6 +84,27 @@ module t;
 
   logic [31:0] thirty_two_bits;
   two_dee_t two_dee_sig;
+
+  function automatic real real_identity(real x);
+    return x;
+  endfunction
+
+  // Casts under an implicit integer-to-real conversion (#9205)
+  initial begin
+    logic [6:0] c7;
+    for (int n = 3; n < 128; n += 31) begin
+      c7 = 7'(n);
+      `checkr(int'(c7) * 0.5, real'(c7) * 0.5);
+      `checkr(0.5 * int'(c7), real'(c7) * 0.5);
+      `checkr(7'(c7) * 0.5, real'(c7) * 0.5);
+      `checkr(int'(c7) + 0.5, real'(c7) + 0.5);
+      `checkr(-int'(c7) + 0.5, 0.5 - real'(c7));
+      `checkr(int'(c7 / 2) / 2.0, real'(c7 / 2) / 2.0);
+      `checkr(int'(c7) ** 2.0, real'(c7) * real'(c7));
+      `checkr($itor(int'(c7)), real'(c7));
+      `checkr(real_identity(int'(c7)), real'(c7));
+    end
+  end
 
   int i;
   initial begin
